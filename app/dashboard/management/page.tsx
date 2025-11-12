@@ -146,89 +146,108 @@ export default async function ManagementDashboard() {
 
   return (
     <DashboardLayout user={profile}>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Management Dashboard</h1>
-          <p className="text-muted-foreground">
+      <div className="space-y-8">
+        {/* Header with gradient */}
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight">Management Dashboard</h1>
+          <p className="text-lg text-muted-foreground">
             Overview of your lead generation operations
           </p>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
+        {/* KPI Cards with Premium Styling */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Calls Today - Blue gradient */}
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Calls Today
               </CardTitle>
-              <Phone className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <Phone className="h-5 w-5 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpis.callsToday}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{kpis.callsToday}</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 Active calling sessions
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Leads Delivered - Purple gradient */}
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Leads Delivered
               </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-purple-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpis.leadsToday}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{kpis.leadsToday}</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 New leads today
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Conversion Rate - Emerald gradient */}
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Conversion Rate
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpis.conversionRate}%</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{kpis.conversionRate}%</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 This month
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Revenue - Gradient accent */}
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium bg-gradient-to-br from-primary to-accent">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-white/90">
                 Revenue Generated
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold tracking-tight text-white animate-countUp">
                 £{kpis.revenue.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-white/80 mt-1">
                 Closed won this month
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Qualified Leads - Amber gradient */}
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Qualified Leads
               </CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-amber-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpis.qualifiedLeads}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{kpis.qualifiedLeads}</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 Past 7 days
               </p>
             </CardContent>
@@ -236,32 +255,32 @@ export default async function ManagementDashboard() {
         </div>
 
         {/* Active Campaigns */}
-        <Card>
+        <Card className="border-0 shadow-premium">
           <CardHeader>
-            <CardTitle>Active Campaigns</CardTitle>
-            <CardDescription>Currently running campaigns by client</CardDescription>
+            <CardTitle className="text-2xl font-bold">Active Campaigns</CardTitle>
+            <CardDescription className="text-base">Currently running campaigns by client</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {activeCampaigns.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No active campaigns</p>
               ) : (
                 activeCampaigns.map((campaign: any) => (
-                  <div key={campaign.id} className="flex items-center justify-between">
+                  <div key={campaign.id} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-white border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-200">
                     <div>
-                      <p className="font-medium">{campaign.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-semibold text-base">{campaign.name}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">
                         {campaign.clients?.company_name}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-sm font-medium">{campaign.leads?.length || 0} leads</p>
+                        <p className="text-lg font-bold">{campaign.leads?.length || 0}</p>
                         <p className="text-xs text-muted-foreground">
-                          Target: {campaign.target_leads}
+                          of {campaign.target_leads} leads
                         </p>
                       </div>
-                      <Badge variant="success">Active</Badge>
+                      <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Active</Badge>
                     </div>
                   </div>
                 ))
