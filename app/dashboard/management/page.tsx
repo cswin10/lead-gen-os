@@ -7,6 +7,9 @@ import DashboardLayout from '@/components/layouts/dashboard-layout'
 import CampaignPerformanceChart from '@/components/charts/campaign-performance-chart'
 import TeamLeaderboard from '@/components/management/team-leaderboard'
 
+// Revalidate this page every 30 seconds for better performance
+export const revalidate = 30
+
 async function getKPIs(orgId: string) {
   const supabase = await createClient()
 
@@ -16,7 +19,7 @@ async function getKPIs(orgId: string) {
   const monthStart = new Date()
   monthStart.setDate(1)
 
-  // Run all queries in parallel for much faster loading
+  // Run all queries in parallel for better performance
   const [
     { count: callsToday },
     { count: leadsToday },
@@ -55,14 +58,14 @@ async function getKPIs(orgId: string) {
       .eq('status', 'closed_won')
       .gte('created_at', monthStart.toISOString()),
 
-    // Get total leads this month
+    // Get total leads for conversion rate
     supabase
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', orgId)
       .gte('created_at', monthStart.toISOString()),
 
-    // Get closed won count
+    // Get closed won for conversion rate
     supabase
       .from('leads')
       .select('*', { count: 'exact', head: true })
@@ -121,8 +124,8 @@ export default async function ManagementDashboard() {
   if (!profile || !['owner', 'manager'].includes(profile.role)) {
     redirect('/dashboard/agent')
   }
-  
-  // Fetch both in parallel for faster loading
+
+  // Run all data fetching in parallel for better performance
   const [kpis, activeCampaigns] = await Promise.all([
     getKPIs(profile.organization_id),
     getActiveCampaigns(profile.organization_id)

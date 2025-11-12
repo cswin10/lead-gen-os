@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,22 +13,32 @@ export default function CallPanel({ agentId }: { agentId: string }) {
   const [isMuted, setIsMuted] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
   const [notes, setNotes] = useState('')
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [])
 
   // In a real implementation, this would integrate with Twilio
   const handleStartCall = () => {
     setIsInCall(true)
     // Start call timer
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setCallDuration(prev => prev + 1)
     }, 1000)
-    
-    // Store timer ID for cleanup
-    ;(window as any).callTimer = timer
   }
 
   const handleEndCall = () => {
     setIsInCall(false)
-    clearInterval((window as any).callTimer)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
     setCallDuration(0)
     setIsMuted(false)
   }

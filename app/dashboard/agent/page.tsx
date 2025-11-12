@@ -6,12 +6,15 @@ import DashboardLayout from '@/components/layouts/dashboard-layout'
 import LeadsList from '@/components/agent/leads-list'
 import CallPanel from '@/components/agent/call-panel'
 
+// Revalidate this page every 30 seconds for better performance
+export const revalidate = 30
+
 async function getAgentStats(agentId: string, orgId: string) {
   const supabase = await createClient()
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Run all queries in parallel for faster loading
+  // Run all queries in parallel for better performance
   const [
     { count: callsToday },
     { data: callsData },

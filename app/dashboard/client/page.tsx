@@ -7,19 +7,21 @@ import { Badge } from '@/components/ui/badge'
 import DashboardLayout from '@/components/layouts/dashboard-layout'
 import ClientLeadsChart from '@/components/client/client-leads-chart'
 
-async function getClientStats(clientId: string, orgId: string) {
+// Revalidate this page every 30 seconds for better performance
+export const revalidate = 30
+
+async function getClientStats(clientId: string, costPerLead: number) {
   const supabase = await createClient()
 
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
 
-  // Run all queries in parallel for faster loading
+  // Run all queries in parallel for better performance
   const [
     { count: leadsThisWeek },
     { count: activeLeads },
     { count: totalLeads },
-    { count: closedWon },
-    { data: client }
+    { count: closedWon }
   ] = await Promise.all([
     // Leads delivered this week
     supabase
@@ -35,29 +37,22 @@ async function getClientStats(clientId: string, orgId: string) {
       .eq('client_id', clientId)
       .in('status', ['new', 'contacted', 'qualified', 'interested']),
 
-    // Total leads
+    // Total leads for conversion rate
     supabase
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('client_id', clientId),
 
-    // Closed won count
+    // Closed won leads
     supabase
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('client_id', clientId)
-      .eq('status', 'closed_won'),
-
-    // Get client data for cost per lead
-    supabase
-      .from('clients')
-      .select('cost_per_lead')
-      .eq('id', clientId)
-      .single()
+      .eq('status', 'closed_won')
   ])
 
   const conversionRate = totalLeads && closedWon ? ((closedWon / totalLeads) * 100).toFixed(1) : '0'
-  const estimatedValue = (closedWon || 0) * (client?.cost_per_lead || 0)
+  const estimatedValue = (closedWon || 0) * costPerLead
 
   return {
     leadsThisWeek: leadsThisWeek || 0,
@@ -122,7 +117,7 @@ export default async function ClientDashboard() {
     .select('*')
     .eq('organization_id', profile.organization_id)
     .single()
-  
+
   if (!client) {
     return (
       <DashboardLayout user={profile}>
@@ -133,10 +128,10 @@ export default async function ClientDashboard() {
       </DashboardLayout>
     )
   }
-  
-  // Fetch all data in parallel for faster loading
+
+  // Run all data fetching in parallel for better performance
   const [stats, campaigns, recentLeads] = await Promise.all([
-    getClientStats(client.id, profile.organization_id),
+    getClientStats(client.id, client.cost_per_lead || 0),
     getClientCampaigns(client.id),
     getRecentLeads(client.id)
   ])

@@ -32,7 +32,7 @@ export default function LeadsList({ agentId }: { agentId: string }) {
   useEffect(() => {
     async function fetchLeads() {
       const supabase = createClient()
-      
+
       const { data } = await supabase
         .from('leads')
         .select(`
@@ -44,19 +44,20 @@ export default function LeadsList({ agentId }: { agentId: string }) {
         .order('priority', { ascending: false })
         .order('created_at', { ascending: true })
         .limit(20)
-      
+
       if (data) {
         setLeads(data as any)
         if (data.length > 0 && !selectedLead) {
           setSelectedLead(data[0] as any)
         }
       }
-      
+
       setLoading(false)
     }
-    
+
     fetchLeads()
-  }, [agentId, selectedLead])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
