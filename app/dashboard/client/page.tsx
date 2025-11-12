@@ -48,7 +48,7 @@ async function getClientStats(clientId: string, orgId: string) {
     .eq('id', clientId)
     .single()
   
-  const estimatedValue = closedWon * (client?.cost_per_lead || 0)
+  const estimatedValue = (closedWon || 0) * (client?.cost_per_lead || 0)
   
   return {
     leadsThisWeek: leadsThisWeek || 0,
