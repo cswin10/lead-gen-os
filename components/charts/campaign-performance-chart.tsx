@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface CampaignData {
@@ -13,44 +12,11 @@ interface CampaignData {
   won_leads: number
 }
 
-export default function CampaignPerformanceChart({ organizationId }: { organizationId: string }) {
-  const [data, setData] = useState<CampaignData[]>([])
-  const [loading, setLoading] = useState(true)
+interface CampaignPerformanceChartProps {
+  data: CampaignData[]
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient()
-      
-      const { data: campaigns } = await supabase
-        .from('campaign_performance')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .limit(10)
-      
-      if (campaigns) {
-        setData(campaigns as CampaignData[])
-      }
-      
-      setLoading(false)
-    }
-    
-    fetchData()
-  }, [organizationId])
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Campaign Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+function CampaignPerformanceChart({ data }: CampaignPerformanceChartProps) {
 
   if (data.length === 0) {
     return (
@@ -97,3 +63,5 @@ export default function CampaignPerformanceChart({ organizationId }: { organizat
     </Card>
   )
 }
+
+export default memo(CampaignPerformanceChart)

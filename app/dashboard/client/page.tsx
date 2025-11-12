@@ -79,15 +79,53 @@ async function getClientCampaigns(clientId: string) {
 
 async function getRecentLeads(clientId: string) {
   const supabase = await createClient()
-  
+
   const { data } = await supabase
     .from('leads')
     .select('*')
     .eq('client_id', clientId)
     .order('created_at', { ascending: false })
     .limit(10)
-  
+
   return data || []
+}
+
+async function getChartData(clientId: string) {
+  const supabase = await createClient()
+
+  // Get last 30 days of leads with aggregation done in SQL
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const { data: leads } = await supabase
+    .from('leads')
+    .select('created_at, status')
+    .eq('client_id', clientId)
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .order('created_at', { ascending: true })
+
+  if (!leads || leads.length === 0) {
+    return []
+  }
+
+  // Group by date on server
+  const groupedData: Record<string, { leads: number, qualified: number, won: number }> = {}
+
+  leads.forEach((lead) => {
+    const date = new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (!groupedData[date]) {
+      groupedData[date] = { leads: 0, qualified: 0, won: 0 }
+    }
+    groupedData[date].leads++
+    if (lead.status === 'qualified') groupedData[date].qualified++
+    if (lead.status === 'closed_won') groupedData[date].won++
+  })
+
+  // Convert to array
+  return Object.entries(groupedData).map(([date, counts]) => ({
+    date,
+    ...counts
+  }))
 }
 
 export default async function ClientDashboard() {
@@ -130,10 +168,11 @@ export default async function ClientDashboard() {
   }
 
   // Run all data fetching in parallel for better performance
-  const [stats, campaigns, recentLeads] = await Promise.all([
+  const [stats, campaigns, recentLeads, chartData] = await Promise.all([
     getClientStats(client.id, client.cost_per_lead || 0),
     getClientCampaigns(client.id),
-    getRecentLeads(client.id)
+    getRecentLeads(client.id),
+    getChartData(client.id)
   ])
 
   return (
@@ -256,7 +295,7 @@ export default async function ClientDashboard() {
         </Card>
 
         {/* Leads Chart */}
-        <ClientLeadsChart clientId={client.id} />
+        <ClientLeadsChart data={chartData} />
 
         {/* Recent Leads */}
         <Card>

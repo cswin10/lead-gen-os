@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Phone, PhoneOff, Mic, MicOff, Clock, CheckCircle2, XCircle } from 'lucide-react'
 
-export default function CallPanel({ agentId }: { agentId: string }) {
+function CallPanel({ agentId }: { agentId: string }) {
   const [isInCall, setIsInCall] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
@@ -174,3 +174,5 @@ export default function CallPanel({ agentId }: { agentId: string }) {
     </Card>
   )
 }
+
+export default memo(CallPanel)

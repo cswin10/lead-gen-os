@@ -91,7 +91,7 @@ async function getKPIs(orgId: string) {
 
 async function getActiveCampaigns(orgId: string) {
   const supabase = await createClient()
-  
+
   const { data } = await supabase
     .from('campaigns')
     .select(`
@@ -102,7 +102,19 @@ async function getActiveCampaigns(orgId: string) {
     .eq('organization_id', orgId)
     .eq('status', 'active')
     .limit(5)
-  
+
+  return data || []
+}
+
+async function getCampaignPerformance(orgId: string) {
+  const supabase = await createClient()
+
+  const { data } = await supabase
+    .from('campaign_performance')
+    .select('*')
+    .eq('organization_id', orgId)
+    .limit(10)
+
   return data || []
 }
 
@@ -126,9 +138,10 @@ export default async function ManagementDashboard() {
   }
 
   // Run all data fetching in parallel for better performance
-  const [kpis, activeCampaigns] = await Promise.all([
+  const [kpis, activeCampaigns, campaignPerformance] = await Promise.all([
     getKPIs(profile.organization_id),
-    getActiveCampaigns(profile.organization_id)
+    getActiveCampaigns(profile.organization_id),
+    getCampaignPerformance(profile.organization_id)
   ])
 
   return (
@@ -261,7 +274,7 @@ export default async function ManagementDashboard() {
         <TeamLeaderboard organizationId={profile.organization_id} />
 
         {/* Campaign Performance Chart */}
-        <CampaignPerformanceChart organizationId={profile.organization_id} />
+        <CampaignPerformanceChart data={campaignPerformance} />
       </div>
     </DashboardLayout>
   )

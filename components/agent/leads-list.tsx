@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +24,7 @@ interface Lead {
   }
 }
 
-export default function LeadsList({ agentId }: { agentId: string }) {
+function LeadsList({ agentId }: { agentId: string }) {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -180,3 +180,5 @@ export default function LeadsList({ agentId }: { agentId: string }) {
     </Card>
   )
 }
+
+export default memo(LeadsList)

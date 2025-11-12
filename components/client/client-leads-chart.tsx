@@ -1,10 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { format, subDays } from 'date-fns'
 
 interface ChartData {
   date: string
@@ -13,67 +11,11 @@ interface ChartData {
   won: number
 }
 
-export default function ClientLeadsChart({ clientId }: { clientId: string }) {
-  const [data, setData] = useState<ChartData[]>([])
-  const [loading, setLoading] = useState(true)
+interface ClientLeadsChartProps {
+  data: ChartData[]
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient()
-      
-      // Get last 30 days of data
-      const thirtyDaysAgo = subDays(new Date(), 30)
-      
-      const { data: leads } = await supabase
-        .from('leads')
-        .select('created_at, status')
-        .eq('client_id', clientId)
-        .gte('created_at', thirtyDaysAgo.toISOString())
-      
-      if (leads) {
-        // Group by date
-        const groupedData: Record<string, { leads: number, qualified: number, won: number }> = {}
-        
-        leads.forEach((lead) => {
-          const date = format(new Date(lead.created_at), 'MMM dd')
-          if (!groupedData[date]) {
-            groupedData[date] = { leads: 0, qualified: 0, won: 0 }
-          }
-          groupedData[date].leads++
-          if (lead.status === 'qualified') groupedData[date].qualified++
-          if (lead.status === 'closed_won') groupedData[date].won++
-        })
-        
-        // Convert to array
-        const chartData = Object.entries(groupedData).map(([date, counts]) => ({
-          date,
-          ...counts
-        }))
-        
-        setData(chartData)
-      }
-      
-      setLoading(false)
-    }
-    
-    fetchData()
-  }, [clientId])
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Lead Delivery Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
+function ClientLeadsChart({ data }: ClientLeadsChartProps) {
   if (data.length === 0) {
     return (
       <Card>
@@ -113,3 +55,5 @@ export default function ClientLeadsChart({ clientId }: { clientId: string }) {
     </Card>
   )
 }
+
+export default memo(ClientLeadsChart)
