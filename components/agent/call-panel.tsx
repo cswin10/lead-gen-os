@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Phone, PhoneOff, Mic, MicOff, Clock, CheckCircle2, XCircle } from 'lucide-react'
 
@@ -134,12 +135,11 @@ export default function CallPanel({ agentId }: { agentId: string }) {
             {/* Notes */}
             <div>
               <label className="text-sm font-medium mb-1 block">Call Notes</label>
-              <Input
+              <Textarea
                 placeholder="Type notes here..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="h-20"
-                as="textarea"
               />
             </div>
           </div>
