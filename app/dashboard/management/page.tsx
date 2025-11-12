@@ -9,65 +9,74 @@ import TeamLeaderboard from '@/components/management/team-leaderboard'
 
 async function getKPIs(orgId: string) {
   const supabase = await createClient()
-  
+
   const today = new Date().toISOString().split('T')[0]
-  
-  // Get today's calls
-  const { count: callsToday } = await supabase
-    .from('calls')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .gte('created_at', `${today}T00:00:00`)
-  
-  // Get leads delivered today
-  const { count: leadsToday } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .gte('created_at', `${today}T00:00:00`)
-  
-  // Get qualified leads this week
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  
-  const { count: qualifiedLeads } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .eq('status', 'qualified')
-    .gte('created_at', weekAgo.toISOString())
-  
-  // Get total revenue this month (closed_won leads)
   const monthStart = new Date()
   monthStart.setDate(1)
-  
-  const { data: wonLeads } = await supabase
-    .from('leads')
-    .select('*, clients(cost_per_lead)')
-    .eq('organization_id', orgId)
-    .eq('status', 'closed_won')
-    .gte('created_at', monthStart.toISOString())
-  
+
+  // Run all queries in parallel for much faster loading
+  const [
+    { count: callsToday },
+    { count: leadsToday },
+    { count: qualifiedLeads },
+    { data: wonLeads },
+    { count: totalLeads },
+    { count: closedWon }
+  ] = await Promise.all([
+    // Get today's calls
+    supabase
+      .from('calls')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .gte('created_at', `${today}T00:00:00`),
+
+    // Get leads delivered today
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .gte('created_at', `${today}T00:00:00`),
+
+    // Get qualified leads this week
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'qualified')
+      .gte('created_at', weekAgo.toISOString()),
+
+    // Get total revenue this month (closed_won leads)
+    supabase
+      .from('leads')
+      .select('*, clients(cost_per_lead)')
+      .eq('organization_id', orgId)
+      .eq('status', 'closed_won')
+      .gte('created_at', monthStart.toISOString()),
+
+    // Get total leads this month
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .gte('created_at', monthStart.toISOString()),
+
+    // Get closed won count
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'closed_won')
+      .gte('created_at', monthStart.toISOString())
+  ])
+
   const revenue = wonLeads?.reduce((sum, lead: any) => {
     return sum + (lead.clients?.cost_per_lead || 0)
   }, 0) || 0
-  
-  // Get conversion rate
-  const { count: totalLeads } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .gte('created_at', monthStart.toISOString())
-  
-  const { count: closedWon } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .eq('status', 'closed_won')
-    .gte('created_at', monthStart.toISOString())
-  
+
   const conversionRate = totalLeads && closedWon ? ((closedWon / totalLeads) * 100).toFixed(1) : '0'
-  
+
   return {
     callsToday: callsToday || 0,
     leadsToday: leadsToday || 0,
@@ -113,8 +122,11 @@ export default async function ManagementDashboard() {
     redirect('/dashboard/agent')
   }
   
-  const kpis = await getKPIs(profile.organization_id)
-  const activeCampaigns = await getActiveCampaigns(profile.organization_id)
+  // Fetch both in parallel for faster loading
+  const [kpis, activeCampaigns] = await Promise.all([
+    getKPIs(profile.organization_id),
+    getActiveCampaigns(profile.organization_id)
+  ])
 
   return (
     <DashboardLayout user={profile}>

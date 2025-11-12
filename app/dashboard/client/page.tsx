@@ -9,47 +9,56 @@ import ClientLeadsChart from '@/components/client/client-leads-chart'
 
 async function getClientStats(clientId: string, orgId: string) {
   const supabase = await createClient()
-  
+
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  
-  // Leads delivered this week
-  const { count: leadsThisWeek } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .gte('created_at', weekAgo.toISOString())
-  
-  // Total active leads
-  const { count: activeLeads } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .in('status', ['new', 'contacted', 'qualified', 'interested'])
-  
-  // Conversion rate
-  const { count: totalLeads } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-  
-  const { count: closedWon } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .eq('status', 'closed_won')
-  
+
+  // Run all queries in parallel for faster loading
+  const [
+    { count: leadsThisWeek },
+    { count: activeLeads },
+    { count: totalLeads },
+    { count: closedWon },
+    { data: client }
+  ] = await Promise.all([
+    // Leads delivered this week
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+      .gte('created_at', weekAgo.toISOString()),
+
+    // Total active leads
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+      .in('status', ['new', 'contacted', 'qualified', 'interested']),
+
+    // Total leads
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId),
+
+    // Closed won count
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+      .eq('status', 'closed_won'),
+
+    // Get client data for cost per lead
+    supabase
+      .from('clients')
+      .select('cost_per_lead')
+      .eq('id', clientId)
+      .single()
+  ])
+
   const conversionRate = totalLeads && closedWon ? ((closedWon / totalLeads) * 100).toFixed(1) : '0'
-  
-  // Get client data for cost per lead
-  const { data: client } = await supabase
-    .from('clients')
-    .select('cost_per_lead')
-    .eq('id', clientId)
-    .single()
-  
   const estimatedValue = (closedWon || 0) * (client?.cost_per_lead || 0)
-  
+
   return {
     leadsThisWeek: leadsThisWeek || 0,
     activeLeads: activeLeads || 0,
@@ -125,9 +134,12 @@ export default async function ClientDashboard() {
     )
   }
   
-  const stats = await getClientStats(client.id, profile.organization_id)
-  const campaigns = await getClientCampaigns(client.id)
-  const recentLeads = await getRecentLeads(client.id)
+  // Fetch all data in parallel for faster loading
+  const [stats, campaigns, recentLeads] = await Promise.all([
+    getClientStats(client.id, profile.organization_id),
+    getClientCampaigns(client.id),
+    getRecentLeads(client.id)
+  ])
 
   return (
     <DashboardLayout user={profile}>

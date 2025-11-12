@@ -8,40 +8,48 @@ import CallPanel from '@/components/agent/call-panel'
 
 async function getAgentStats(agentId: string, orgId: string) {
   const supabase = await createClient()
-  
+
   const today = new Date().toISOString().split('T')[0]
-  
-  // Calls made today
-  const { count: callsToday } = await supabase
-    .from('calls')
-    .select('*', { count: 'exact', head: true })
-    .eq('agent_id', agentId)
-    .gte('created_at', `${today}T00:00:00`)
-  
-  // Total call time today
-  const { data: callsData } = await supabase
-    .from('calls')
-    .select('duration_seconds')
-    .eq('agent_id', agentId)
-    .gte('created_at', `${today}T00:00:00`)
-  
+
+  // Run all queries in parallel for faster loading
+  const [
+    { count: callsToday },
+    { data: callsData },
+    { count: assignedLeads },
+    { count: qualifiedToday }
+  ] = await Promise.all([
+    // Calls made today
+    supabase
+      .from('calls')
+      .select('*', { count: 'exact', head: true })
+      .eq('agent_id', agentId)
+      .gte('created_at', `${today}T00:00:00`),
+
+    // Total call time today
+    supabase
+      .from('calls')
+      .select('duration_seconds')
+      .eq('agent_id', agentId)
+      .gte('created_at', `${today}T00:00:00`),
+
+    // Assigned leads
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('assigned_agent_id', agentId)
+      .in('status', ['new', 'contacted', 'qualified', 'interested']),
+
+    // Qualified today
+    supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('assigned_agent_id', agentId)
+      .eq('status', 'qualified')
+      .gte('updated_at', `${today}T00:00:00`)
+  ])
+
   const totalCallTime = callsData?.reduce((sum, call) => sum + (call.duration_seconds || 0), 0) || 0
-  
-  // Assigned leads
-  const { count: assignedLeads } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('assigned_agent_id', agentId)
-    .in('status', ['new', 'contacted', 'qualified', 'interested'])
-  
-  // Qualified today
-  const { count: qualifiedToday } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('assigned_agent_id', agentId)
-    .eq('status', 'qualified')
-    .gte('updated_at', `${today}T00:00:00`)
-  
+
   return {
     callsToday: callsToday || 0,
     totalCallTime: Math.round(totalCallTime / 60), // Convert to minutes
