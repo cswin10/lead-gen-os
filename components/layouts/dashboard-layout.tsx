@@ -51,32 +51,35 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-white">
+      <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-white shadow-sm">
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="border-b px-6 py-4">
-            <h1 className="text-xl font-bold text-primary">LeadGen OS</h1>
-            <p className="text-xs text-muted-foreground">{user.organizations?.name}</p>
+          <div className="border-b px-6 py-4 bg-gradient-to-r from-primary/5 to-transparent">
+            <h1 className="text-xl font-bold text-primary animate-fadeIn">LeadGen OS</h1>
+            <p className="text-xs text-muted-foreground animate-fadeIn">{user.organizations?.name}</p>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4">
-            {navItems.map((item) => {
+            {navItems.map((item, index) => {
               const Icon = item.icon
               const isActive = pathname === item.href
-              
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                    'hover:scale-[1.02] active:scale-[0.98]',
+                    'animate-slideIn',
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm'
                   )}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                   {item.label}
                 </Link>
               )
@@ -84,7 +87,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
           </nav>
 
           {/* User Section */}
-          <div className="border-t p-4">
+          <div className="border-t p-4 bg-gray-50/50">
             <div className="mb-2">
               <p className="text-sm font-medium">{user.full_name || user.email}</p>
               <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
@@ -104,7 +107,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
 
       {/* Main Content */}
       <main className="ml-64 p-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl animate-fadeIn">
           {children}
         </div>
       </main>
