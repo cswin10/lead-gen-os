@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Phone, Mail, Building2, Briefcase, Clock } from 'lucide-react'
 import { formatPhoneNumber, formatDateTime } from '@/lib/utils'
 
-interface Lead {
+export interface Lead {
   id: string
   first_name: string
   last_name: string
@@ -24,7 +24,12 @@ interface Lead {
   }
 }
 
-function LeadsList({ agentId }: { agentId: string }) {
+interface LeadsListProps {
+  agentId: string
+  onLeadSelect?: (lead: Lead | null) => void
+}
+
+function LeadsList({ agentId, onLeadSelect }: LeadsListProps) {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -116,7 +121,10 @@ function LeadsList({ agentId }: { agentId: string }) {
           {leads.map((lead) => (
             <div
               key={lead.id}
-              onClick={() => setSelectedLead(lead)}
+              onClick={() => {
+                setSelectedLead(lead)
+                onLeadSelect?.(lead)
+              }}
               className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                 selectedLead?.id === lead.id
                   ? 'border-primary bg-primary/5'

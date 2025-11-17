@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Users, TrendingUp, DollarSign, Target, Download } from 'lucide-react'
+import { Users, TrendingUp, DollarSign, Target } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import DashboardLayout from '@/components/layouts/dashboard-layout'
 import ClientLeadsChart from '@/components/client/client-leads-chart'
+import ExportLeadsButton from '@/components/client/export-leads-button'
 
 // Revalidate this page every 30 seconds for better performance
 export const revalidate = 30
@@ -177,7 +177,7 @@ export default async function ClientDashboard() {
 
   return (
     <DashboardLayout user={profile}>
-      <div className="space-y-8">
+      <div className="space-y-8 dashboard-client">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -186,10 +186,7 @@ export default async function ClientDashboard() {
               Lead generation dashboard
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
-            <Download className="h-4 w-4 mr-2" />
-            Export Leads
-          </Button>
+          <ExportLeadsButton clientId={client.id} />
         </div>
 
         {/* KPI Cards */}
@@ -248,7 +245,7 @@ export default async function ClientDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden card-hover border-0 shadow-premium bg-gradient-to-br from-primary to-accent">
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium dashboard-primary">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold text-white/90">
                 Estimated Value
