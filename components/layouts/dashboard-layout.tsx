@@ -26,11 +26,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
     if (user.role === 'owner' || user.role === 'manager') {
       return [
         { href: '/dashboard/management', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/dashboard/management/clients', label: 'Clients', icon: Users },
-        { href: '/dashboard/management/campaigns', label: 'Campaigns', icon: BarChart3 },
-        { href: '/dashboard/management/leads', label: 'Leads', icon: Users },
-        { href: '/dashboard/management/team', label: 'Team', icon: Users },
-        { href: '/dashboard/management/settings', label: 'Settings', icon: Settings },
+        { href: '/dashboard/settings', label: 'Settings', icon: Settings },
       ]
     } else if (user.role === 'agent') {
       return [
