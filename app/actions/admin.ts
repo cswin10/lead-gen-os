@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
 export async function createAgent(formData: {
@@ -10,10 +10,33 @@ export async function createAgent(formData: {
   password: string
   organizationId: string
 }) {
+  // Check authorization - only owners/managers can create agents
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !['owner', 'manager'].includes(profile.role)) {
+    return { success: false, error: 'Unauthorized: Only owners and managers can create agents' }
+  }
+
+  if (profile.organization_id !== formData.organizationId) {
+    return { success: false, error: 'Unauthorized: Cannot create agents for other organizations' }
+  }
+
+  // Use service role client for admin operations
+  const adminClient = await createServiceRoleClient()
 
   // Create auth user
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: formData.email,
     password: formData.password,
     email_confirm: true,
@@ -24,7 +47,7 @@ export async function createAgent(formData: {
   }
 
   // Create profile
-  const { error: profileError } = await supabase
+  const { error: profileError } = await adminClient
     .from('profiles')
     .insert({
       id: authData.user.id,
@@ -55,10 +78,33 @@ export async function createClientAndUser(formData: {
   password: string
   organizationId: string
 }) {
+  // Check authorization - only owners/managers can create clients
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !['owner', 'manager'].includes(profile.role)) {
+    return { success: false, error: 'Unauthorized: Only owners and managers can create clients' }
+  }
+
+  if (profile.organization_id !== formData.organizationId) {
+    return { success: false, error: 'Unauthorized: Cannot create clients for other organizations' }
+  }
+
+  // Use service role client for admin operations
+  const adminClient = await createServiceRoleClient()
 
   // Create client record
-  const { data: client, error: clientError } = await supabase
+  const { data: client, error: clientError } = await adminClient
     .from('clients')
     .insert({
       company_name: formData.companyName,
@@ -74,7 +120,7 @@ export async function createClientAndUser(formData: {
   }
 
   // Create auth user for client portal access
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: formData.email,
     password: formData.password,
     email_confirm: true,
@@ -85,7 +131,7 @@ export async function createClientAndUser(formData: {
   }
 
   // Create profile linked to client company
-  const { error: profileError } = await supabase
+  const { error: profileError } = await adminClient
     .from('profiles')
     .insert({
       id: authData.user.id,
