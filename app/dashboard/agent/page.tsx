@@ -3,8 +3,7 @@ import { redirect } from 'next/navigation'
 import { Phone, Clock, Target, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import DashboardLayout from '@/components/layouts/dashboard-layout'
-import LeadsList from '@/components/agent/leads-list'
-import CallPanel from '@/components/agent/call-panel'
+import AgentWorkspace from '@/components/agent/agent-workspace'
 
 // Revalidate this page every 30 seconds for better performance
 export const revalidate = 30
@@ -87,72 +86,83 @@ export default async function AgentDashboard() {
 
   return (
     <DashboardLayout user={profile}>
-      <div className="space-y-6">
+      <div className="space-y-8 dashboard-agent">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">My Dashboard</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight">Agent Dashboard</h1>
+          <p className="text-lg text-muted-foreground">
             Today's leads and call activity
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+        {/* Stats Cards with Premium Styling */}
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sky-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Calls Today
               </CardTitle>
-              <Phone className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                <Phone className="h-5 w-5 text-sky-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.callsToday}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{stats.callsToday}</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 Keep it up!
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Call Time
               </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-cyan-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCallTime} min</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{stats.totalCallTime} min</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 Total time today
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -mr-16 -mt-16" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Active Leads
               </CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.assignedLeads}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight animate-countUp">{stats.assignedLeads}</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 In your queue
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium dashboard-primary">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-semibold text-white/90">
                 Qualified Today
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.qualifiedToday}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight text-white animate-countUp">{stats.qualifiedToday}</div>
+              <p className="text-sm text-white/80 mt-1">
                 Great work!
               </p>
             </CardContent>
@@ -160,15 +170,7 @@ export default async function AgentDashboard() {
         </div>
 
         {/* Main Content - Leads List and Call Panel */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <LeadsList agentId={profile.id} />
-          </div>
-          
-          <div>
-            <CallPanel agentId={profile.id} />
-          </div>
-        </div>
+        <AgentWorkspace agentId={profile.id} organizationId={profile.organization_id} />
       </div>
     </DashboardLayout>
   )

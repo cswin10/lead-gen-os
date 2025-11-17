@@ -146,7 +146,7 @@ export default async function ManagementDashboard() {
 
   return (
     <DashboardLayout user={profile}>
-      <div className="space-y-8">
+      <div className="space-y-8 dashboard-management">
         {/* Header with gradient */}
         <div className="space-y-1">
           <h1 className="text-4xl font-bold tracking-tight">Management Dashboard</h1>
@@ -214,8 +214,8 @@ export default async function ManagementDashboard() {
             </CardContent>
           </Card>
 
-          {/* Revenue - Gradient accent */}
-          <Card className="relative overflow-hidden card-hover border-0 shadow-premium bg-gradient-to-br from-primary to-accent">
+          {/* Revenue - Dashboard-specific gradient */}
+          <Card className="relative overflow-hidden card-hover border-0 shadow-premium dashboard-primary">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold text-white/90">
                 Revenue Generated

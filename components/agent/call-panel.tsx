@@ -7,8 +7,22 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Phone, PhoneOff, Mic, MicOff, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { updateLeadStatus, logCall } from '@/app/actions/leads'
+import { useRouter } from 'next/navigation'
 
-function CallPanel({ agentId }: { agentId: string }) {
+interface CallPanelProps {
+  agentId: string
+  organizationId: string
+  selectedLead?: {
+    id: string
+    first_name: string
+    last_name: string
+    phone: string
+  } | null
+}
+
+function CallPanel({ agentId, organizationId, selectedLead }: CallPanelProps) {
+  const router = useRouter()
   const [isInCall, setIsInCall] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
@@ -33,14 +47,29 @@ function CallPanel({ agentId }: { agentId: string }) {
     }, 1000)
   }
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
+    if (!selectedLead) return
+
     setIsInCall(false)
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
+
+    // Log the call in database
+    await logCall(
+      selectedLead.id,
+      agentId,
+      organizationId,
+      callDuration,
+      'completed',
+      notes
+    )
+
     setCallDuration(0)
     setIsMuted(false)
+    setNotes('')
+    router.refresh()
   }
 
   const formatCallDuration = (seconds: number) => {
@@ -50,9 +79,54 @@ function CallPanel({ agentId }: { agentId: string }) {
   }
 
   const handleQuickAction = async (outcome: string) => {
-    // In a real implementation, this would update the lead status
-    console.log('Quick action:', outcome)
-    alert(`Lead marked as: ${outcome}`)
+    if (!selectedLead) return
+
+    let status = 'contacted'
+
+    // Map outcomes to statuses
+    switch (outcome) {
+      case 'interested':
+        status = 'interested'
+        break
+      case 'not_interested':
+        status = 'not_interested'
+        break
+      case 'callback':
+        status = 'callback'
+        break
+      case 'voicemail':
+        status = 'contacted'
+        break
+      case 'qualified':
+        status = 'qualified'
+        break
+    }
+
+    // Update lead status
+    const result = await updateLeadStatus(selectedLead.id, status, notes)
+
+    if (result.success) {
+      // Log the call
+      await logCall(
+        selectedLead.id,
+        agentId,
+        organizationId,
+        callDuration,
+        outcome,
+        notes
+      )
+
+      // End the call and refresh
+      setIsInCall(false)
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      setCallDuration(0)
+      setIsMuted(false)
+      setNotes('')
+      router.refresh()
+    }
   }
 
   return (
@@ -60,10 +134,18 @@ function CallPanel({ agentId }: { agentId: string }) {
       <CardHeader>
         <CardTitle>Call Panel</CardTitle>
         <CardDescription>
-          {isInCall ? 'Call in progress' : 'Ready to call'}
+          {isInCall ? 'Call in progress' : selectedLead ? `Ready to call ${selectedLead.first_name}` : 'Select a lead to start calling'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Selected Lead Info */}
+        {selectedLead && !isInCall && (
+          <div className="p-3 bg-muted rounded-lg">
+            <p className="font-semibold">{selectedLead.first_name} {selectedLead.last_name}</p>
+            <p className="text-sm text-muted-foreground">{selectedLead.phone}</p>
+          </div>
+        )}
+
         {/* Call Status */}
         <div className="text-center py-6">
           {isInCall ? (
@@ -73,13 +155,20 @@ function CallPanel({ agentId }: { agentId: string }) {
               </div>
               <div className="text-2xl font-bold mb-2">{formatCallDuration(callDuration)}</div>
               <Badge variant="success">Active Call</Badge>
+              {selectedLead && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Calling {selectedLead.first_name} {selectedLead.last_name}
+                </div>
+              )}
             </>
           ) : (
             <>
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-4">
                 <Phone className="h-10 w-10 text-gray-400" />
               </div>
-              <div className="text-sm text-muted-foreground">Click a lead to start calling</div>
+              <div className="text-sm text-muted-foreground">
+                {selectedLead ? 'Ready to call' : 'Select a lead from the list'}
+              </div>
             </>
           )}
         </div>
@@ -158,6 +247,7 @@ function CallPanel({ agentId }: { agentId: string }) {
             className="w-full"
             size="lg"
             onClick={handleStartCall}
+            disabled={!selectedLead}
           >
             <Phone className="h-5 w-5 mr-2" />
             Start Call
