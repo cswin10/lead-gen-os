@@ -84,7 +84,7 @@ export async function createClientAndUser(formData: {
     return { success: false, error: authError.message }
   }
 
-  // Create profile
+  // Create profile linked to client company
   const { error: profileError } = await supabase
     .from('profiles')
     .insert({
@@ -94,6 +94,7 @@ export async function createClientAndUser(formData: {
       last_name: formData.lastName,
       role: 'client',
       organization_id: formData.organizationId,
+      client_id: client.id,  // Link this user to their client company
     })
 
   if (profileError) {

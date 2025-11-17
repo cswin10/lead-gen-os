@@ -147,13 +147,11 @@ export default async function ClientDashboard() {
     redirect('/')
   }
 
-  // For client users, we need to find their client record
-  // In a real implementation, you'd have a proper client_user relationship
-  // For now, we'll just use the first client in their org
+  // Get the client record for this user (linked via profile.client_id)
   const { data: client } = await supabase
     .from('clients')
     .select('*')
-    .eq('organization_id', profile.organization_id)
+    .eq('id', profile.client_id)
     .single()
 
   if (!client) {
