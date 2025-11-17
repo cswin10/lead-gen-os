@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Users, Building2 } from 'lucide-react'
+import { Users, Building2, Target } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import DashboardLayout from '@/components/layouts/dashboard-layout'
 import AddAgentForm from '@/components/settings/add-agent-form'
 import AddClientForm from '@/components/settings/add-client-form'
 import TeamList from '@/components/settings/team-list'
+import CampaignList from '@/components/management/campaign-list'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -48,6 +49,17 @@ export default async function SettingsPage() {
     .eq('organization_id', profile.organization_id)
     .order('created_at', { ascending: false })
 
+  // Get campaigns
+  const { data: campaigns } = await supabase
+    .from('campaigns')
+    .select(`
+      *,
+      clients(id, company_name),
+      leads(count)
+    `)
+    .eq('organization_id', profile.organization_id)
+    .order('created_at', { ascending: false })
+
   return (
     <DashboardLayout user={profile}>
       <div className="space-y-8 dashboard-management">
@@ -55,12 +67,12 @@ export default async function SettingsPage() {
         <div className="space-y-1">
           <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
           <p className="text-lg text-muted-foreground">
-            Manage your team and clients
+            Manage your team, clients, and campaigns
           </p>
         </div>
 
         <Tabs defaultValue="agents" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="agents">
               <Users className="h-4 w-4 mr-2" />
               Agents
@@ -68,6 +80,10 @@ export default async function SettingsPage() {
             <TabsTrigger value="clients">
               <Building2 className="h-4 w-4 mr-2" />
               Clients
+            </TabsTrigger>
+            <TabsTrigger value="campaigns">
+              <Target className="h-4 w-4 mr-2" />
+              Campaigns
             </TabsTrigger>
           </TabsList>
 
@@ -146,6 +162,26 @@ export default async function SettingsPage() {
                     </p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Campaigns Tab */}
+          <TabsContent value="campaigns" className="space-y-6">
+            <Card className="border-0 shadow-premium">
+              <CardHeader>
+                <CardTitle className="text-2xl">Campaign Management</CardTitle>
+                <CardDescription className="text-base">
+                  Create and manage lead generation campaigns for your clients
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CampaignList
+                  campaigns={campaigns || []}
+                  clients={clients || []}
+                  organizationId={profile.organization_id}
+                  userId={profile.id}
+                />
               </CardContent>
             </Card>
           </TabsContent>
