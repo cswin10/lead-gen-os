@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Target, Pause, Play } from 'lucide-react'
+import { Plus, Pencil, Trash2, Target, Pause, Play, Eye } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import Link from 'next/link'
 
 interface Campaign {
   id: string
@@ -382,7 +383,7 @@ export default function CampaignList({
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                   <div>
                     <p className="text-muted-foreground">Leads</p>
                     <p className="text-2xl font-bold">
@@ -411,6 +412,12 @@ export default function CampaignList({
                     </div>
                   )}
                 </div>
+                <Link href={`/dashboard/management/campaigns/${campaign.id}`}>
+                  <Button variant="outline" className="w-full">
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Campaign Details & Manage Leads
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
