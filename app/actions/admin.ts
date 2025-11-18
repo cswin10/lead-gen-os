@@ -10,60 +10,68 @@ export async function createAgent(formData: {
   password: string
   organizationId: string
 }) {
-  // Check authorization - only owners/managers can create agents
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    // Check authorization - only owners/managers can create agents
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, organization_id')
-    .eq('id', user.id)
-    .single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, organization_id')
+      .eq('id', user.id)
+      .single()
 
-  if (!profile || !['owner', 'manager'].includes(profile.role)) {
-    return { success: false, error: 'Unauthorized: Only owners and managers can create agents' }
-  }
+    if (!profile || !['owner', 'manager'].includes(profile.role)) {
+      return { success: false, error: 'Unauthorized: Only owners and managers can create agents' }
+    }
 
-  if (profile.organization_id !== formData.organizationId) {
-    return { success: false, error: 'Unauthorized: Cannot create agents for other organizations' }
-  }
+    if (profile.organization_id !== formData.organizationId) {
+      return { success: false, error: 'Unauthorized: Cannot create agents for other organizations' }
+    }
 
-  // Use service role client for admin operations
-  const adminClient = await createServiceRoleClient()
+    // Use service role client for admin operations
+    const adminClient = await createServiceRoleClient()
 
-  // Create auth user
-  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-    email: formData.email,
-    password: formData.password,
-    email_confirm: true,
-  })
-
-  if (authError) {
-    return { success: false, error: authError.message }
-  }
-
-  // Create profile
-  const { error: profileError } = await adminClient
-    .from('profiles')
-    .insert({
-      id: authData.user.id,
+    // Create auth user
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email: formData.email,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      role: 'agent',
-      organization_id: formData.organizationId,
+      password: formData.password,
+      email_confirm: true,
     })
 
-  if (profileError) {
-    return { success: false, error: profileError.message }
-  }
+    if (authError) {
+      return { success: false, error: `Auth user creation failed: ${authError.message}` }
+    }
 
-  revalidatePath('/dashboard/settings')
-  return { success: true, credentials: { email: formData.email, password: formData.password } }
+    // Create profile
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: 'agent',
+        organization_id: formData.organizationId,
+      })
+
+    if (profileError) {
+      return { success: false, error: `Profile creation failed: ${profileError.message}` }
+    }
+
+    revalidatePath('/dashboard/settings')
+    return { success: true, credentials: { email: formData.email, password: formData.password } }
+  } catch (error: any) {
+    console.error('Error in createAgent:', error)
+    return {
+      success: false,
+      error: error?.message || 'An unexpected error occurred. Check server logs for details.'
+    }
+  }
 }
 
 export async function createClientAndUser(formData: {
@@ -78,80 +86,88 @@ export async function createClientAndUser(formData: {
   password: string
   organizationId: string
 }) {
-  // Check authorization - only owners/managers can create clients
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    // Check authorization - only owners/managers can create clients
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { success: false, error: 'Not authenticated' }
-  }
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, organization_id')
-    .eq('id', user.id)
-    .single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, organization_id')
+      .eq('id', user.id)
+      .single()
 
-  if (!profile || !['owner', 'manager'].includes(profile.role)) {
-    return { success: false, error: 'Unauthorized: Only owners and managers can create clients' }
-  }
+    if (!profile || !['owner', 'manager'].includes(profile.role)) {
+      return { success: false, error: 'Unauthorized: Only owners and managers can create clients' }
+    }
 
-  if (profile.organization_id !== formData.organizationId) {
-    return { success: false, error: 'Unauthorized: Cannot create clients for other organizations' }
-  }
+    if (profile.organization_id !== formData.organizationId) {
+      return { success: false, error: 'Unauthorized: Cannot create clients for other organizations' }
+    }
 
-  // Use service role client for admin operations
-  const adminClient = await createServiceRoleClient()
+    // Use service role client for admin operations
+    const adminClient = await createServiceRoleClient()
 
-  // Create client record
-  const { data: client, error: clientError } = await adminClient
-    .from('clients')
-    .insert({
-      company_name: formData.companyName,
-      industry: formData.industry,
-      cost_per_lead: formData.costPerLead,
-      organization_id: formData.organizationId,
-    })
-    .select()
-    .single()
+    // Create client record
+    const { data: client, error: clientError } = await adminClient
+      .from('clients')
+      .insert({
+        company_name: formData.companyName,
+        industry: formData.industry,
+        cost_per_lead: formData.costPerLead,
+        organization_id: formData.organizationId,
+      })
+      .select()
+      .single()
 
-  if (clientError) {
-    return { success: false, error: clientError.message }
-  }
+    if (clientError) {
+      return { success: false, error: `Client creation failed: ${clientError.message}` }
+    }
 
-  // Create auth user for client portal access
-  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-    email: formData.email,
-    password: formData.password,
-    email_confirm: true,
-  })
-
-  if (authError) {
-    return { success: false, error: authError.message }
-  }
-
-  // Create profile linked to client company
-  const { error: profileError } = await adminClient
-    .from('profiles')
-    .insert({
-      id: authData.user.id,
+    // Create auth user for client portal access
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email: formData.email,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      role: 'client',
-      organization_id: formData.organizationId,
-      client_id: client.id,  // Link this user to their client company
+      password: formData.password,
+      email_confirm: true,
     })
 
-  if (profileError) {
-    return { success: false, error: profileError.message }
-  }
+    if (authError) {
+      return { success: false, error: `Auth user creation failed: ${authError.message}` }
+    }
 
-  revalidatePath('/dashboard/settings')
-  return {
-    success: true,
-    clientId: client.id,
-    credentials: { email: formData.email, password: formData.password }
+    // Create profile linked to client company
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: 'client',
+        organization_id: formData.organizationId,
+        client_id: client.id,  // Link this user to their client company
+      })
+
+    if (profileError) {
+      return { success: false, error: `Profile creation failed: ${profileError.message}` }
+    }
+
+    revalidatePath('/dashboard/settings')
+    return {
+      success: true,
+      clientId: client.id,
+      credentials: { email: formData.email, password: formData.password }
+    }
+  } catch (error: any) {
+    console.error('Error in createClientAndUser:', error)
+    return {
+      success: false,
+      error: error?.message || 'An unexpected error occurred. Check server logs for details.'
+    }
   }
 }
 
