@@ -25,8 +25,8 @@ export default function LeadImport({ organizationId, campaigns, clients, agents,
   const [validatedLeads, setValidatedLeads] = useState<any[]>([])
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>(defaultCampaignId || '')
-  const [selectedClient, setSelectedClient] = useState<string>('')
-  const [selectedAgent, setSelectedAgent] = useState<string>('')
+  const [selectedClient, setSelectedClient] = useState<string>('none')
+  const [selectedAgent, setSelectedAgent] = useState<string>('auto')
   const [isValidating, setIsValidating] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<any>(null)
@@ -84,8 +84,8 @@ export default function LeadImport({ organizationId, campaigns, clients, agents,
       validatedLeads,
       selectedCampaign,
       organizationId,
-      selectedClient || undefined,
-      selectedAgent || undefined
+      selectedClient && selectedClient !== 'none' ? selectedClient : undefined,
+      selectedAgent && selectedAgent !== 'auto' ? selectedAgent : undefined
     )
 
     setIsImporting(false)
@@ -105,8 +105,8 @@ export default function LeadImport({ organizationId, campaigns, clients, agents,
     setValidatedLeads([])
     setValidationErrors([])
     setSelectedCampaign('')
-    setSelectedClient('')
-    setSelectedAgent('')
+    setSelectedClient('none')
+    setSelectedAgent('auto')
     setImportResult(null)
     setStep('upload')
   }
@@ -342,7 +342,7 @@ Jane,Smith,+0987654321,jane@example.com,Tech Inc,CTO,website,75`
                     <SelectValue placeholder="Select a client" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {clients.map(client => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.company_name}
@@ -359,7 +359,7 @@ Jane,Smith,+0987654321,jane@example.com,Tech Inc,CTO,website,75`
                     <SelectValue placeholder="Auto-distribute or select agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Auto-distribute later</SelectItem>
+                    <SelectItem value="auto">Auto-distribute later</SelectItem>
                     {agents.map(agent => (
                       <SelectItem key={agent.id} value={agent.id}>
                         {agent.first_name} {agent.last_name}
