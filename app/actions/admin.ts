@@ -47,16 +47,18 @@ export async function createAgent(formData: {
       return { success: false, error: `Auth user creation failed: ${authError.message}` }
     }
 
-    // Create profile
+    // Update profile (auto-created by trigger) with correct data
     const { error: profileError } = await adminClient
       .from('profiles')
-      .insert({
+      .upsert({
         id: authData.user.id,
         email: formData.email,
         first_name: formData.firstName,
         last_name: formData.lastName,
         role: 'agent',
         organization_id: formData.organizationId,
+      }, {
+        onConflict: 'id'
       })
 
     if (profileError) {
@@ -139,10 +141,10 @@ export async function createClientAndUser(formData: {
       return { success: false, error: `Auth user creation failed: ${authError.message}` }
     }
 
-    // Create profile linked to client company
+    // Update profile (auto-created by trigger) and link to client company
     const { error: profileError } = await adminClient
       .from('profiles')
-      .insert({
+      .upsert({
         id: authData.user.id,
         email: formData.email,
         first_name: formData.firstName,
@@ -150,6 +152,8 @@ export async function createClientAndUser(formData: {
         role: 'client',
         organization_id: formData.organizationId,
         client_id: client.id,  // Link this user to their client company
+      }, {
+        onConflict: 'id'
       })
 
     if (profileError) {
