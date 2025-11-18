@@ -15,15 +15,16 @@ interface LeadImportProps {
   campaigns: Array<{ id: string; name: string }>
   clients: Array<{ id: string; company_name: string }>
   agents: Array<{ id: string; first_name: string; last_name: string }>
+  defaultCampaignId?: string
 }
 
-export default function LeadImport({ organizationId, campaigns, clients, agents }: LeadImportProps) {
+export default function LeadImport({ organizationId, campaigns, clients, agents, defaultCampaignId }: LeadImportProps) {
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [csvData, setCsvData] = useState<string>('')
   const [validatedLeads, setValidatedLeads] = useState<any[]>([])
   const [validationErrors, setValidationErrors] = useState<string[]>([])
-  const [selectedCampaign, setSelectedCampaign] = useState<string>('')
+  const [selectedCampaign, setSelectedCampaign] = useState<string>(defaultCampaignId || '')
   const [selectedClient, setSelectedClient] = useState<string>('')
   const [selectedAgent, setSelectedAgent] = useState<string>('')
   const [isValidating, setIsValidating] = useState(false)

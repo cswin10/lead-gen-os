@@ -42,7 +42,11 @@ async function getImportData(orgId: string) {
   }
 }
 
-export default async function ImportLeadsPage() {
+export default async function ImportLeadsPage({
+  searchParams
+}: {
+  searchParams: { campaign?: string }
+}) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -70,10 +74,10 @@ export default async function ImportLeadsPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Link href="/dashboard/management/leads">
+              <Link href={searchParams.campaign ? `/dashboard/management/campaigns/${searchParams.campaign}` : "/dashboard/management/leads"}>
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Leads
+                  {searchParams.campaign ? 'Back to Campaign' : 'Back to Leads'}
                 </Button>
               </Link>
             </div>
@@ -90,6 +94,7 @@ export default async function ImportLeadsPage() {
           campaigns={campaigns}
           clients={clients}
           agents={agents}
+          defaultCampaignId={searchParams.campaign}
         />
       </div>
     </DashboardLayout>
