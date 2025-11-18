@@ -75,7 +75,7 @@ export default function CampaignLeadManagement({
   const [selectedAgent, setSelectedAgent] = useState('')
   const [assignCount, setAssignCount] = useState('')
   const [isAssigning, setIsAssigning] = useState(false)
-  const [assignResult, setAssignResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [assignResult, setAssignResult] = useState<{ success: boolean; message?: string; error?: string; count?: number } | null>(null)
 
   // Filters and search
   const [searchQuery, setSearchQuery] = useState('')
@@ -171,14 +171,14 @@ export default function CampaignLeadManagement({
 
   const handleBatchAssign = async () => {
     if (!selectedAgent) {
-      setAssignResult({ success: false, message: 'Please select an agent' })
+      setAssignResult({ success: false, error: 'Please select an agent' })
       return
     }
 
     const count = assignCount === '' ? 'all' : parseInt(assignCount)
 
     if (count !== 'all' && (isNaN(count as number) || (count as number) <= 0)) {
-      setAssignResult({ success: false, message: 'Please enter a valid number' })
+      setAssignResult({ success: false, error: 'Please enter a valid number' })
       return
     }
 
@@ -427,7 +427,7 @@ export default function CampaignLeadManagement({
           {assignResult && (
             <Alert variant={assignResult.success ? 'default' : 'destructive'}>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{assignResult.message}</AlertDescription>
+              <AlertDescription>{assignResult.message || assignResult.error}</AlertDescription>
             </Alert>
           )}
 
