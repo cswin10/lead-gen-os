@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
   Phone, PhoneOff, Mic, MicOff,
-  PhoneX, PhoneMissed, UserX, Clock,
+  PhoneMissed, UserX, Clock,
   CheckCircle2, XCircle, Calendar, Award,
   MessageSquare, ArrowRight
 } from 'lucide-react'
@@ -280,7 +280,7 @@ export default function EnhancedCallPanel({
                       disabled={isProcessing}
                       className="justify-start"
                     >
-                      <PhoneX className="h-4 w-4 mr-2" />
+                      <XCircle className="h-4 w-4 mr-2" />
                       Wrong #
                     </Button>
                     <Button
