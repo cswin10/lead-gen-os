@@ -381,7 +381,7 @@ export default function CampaignLeadManagement({
                 <SelectContent>
                   {agents.map(agent => (
                     <SelectItem key={agent.id} value={agent.id}>
-                      {agent.full_name} ({agentLeadCounts[agent.id] || 0} leads)
+                      {agent.full_name || agent.email || `${agent.first_name} ${agent.last_name}`.trim() || 'Unnamed Agent'} ({agentLeadCounts[agent.id] || 0} leads)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -681,7 +681,7 @@ export default function CampaignLeadManagement({
                 <SelectContent>
                   {agents.map(agent => (
                     <SelectItem key={agent.id} value={agent.id}>
-                      {agent.full_name} ({agentLeadCounts[agent.id] || 0} leads)
+                      {agent.full_name || agent.email || `${agent.first_name} ${agent.last_name}`.trim() || 'Unnamed Agent'} ({agentLeadCounts[agent.id] || 0} leads)
                     </SelectItem>
                   ))}
                 </SelectContent>
