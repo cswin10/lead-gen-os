@@ -80,8 +80,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
 
     // Categorize leads
     const newToday = allLeads.filter(lead =>
-      lead.status === 'new' &&
-      new Date(lead.created_at).toISOString().split('T')[0] === today
+      lead.status === 'new'  // Show ALL new leads, not just today
     )
 
     const callbacks = allLeads.filter(lead =>
@@ -90,7 +89,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
     )
 
     const followUps = allLeads.filter(lead =>
-      lead.status === 'contacted' &&
+      (lead.status === 'contacted' || lead.status === 'interested' || lead.status === 'qualified') &&
       !lead.next_follow_up_at &&
       lead.last_contacted_at
     )
@@ -274,7 +273,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="newToday" className="relative">
-              New Today
+              New Leads
               {leads.newToday.length > 0 && (
                 <Badge className="ml-2" variant="default">{leads.newToday.length}</Badge>
               )}
@@ -302,7 +301,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
           <TabsContent value="newToday" className="space-y-3 mt-4">
             {leads.newToday.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No new leads today
+                No new leads
               </p>
             ) : (
               leads.newToday.map(renderLeadCard)
