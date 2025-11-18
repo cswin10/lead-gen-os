@@ -75,8 +75,12 @@ export async function importLeads(
     let totalInserted = 0
     const errors: string[] = []
 
+    console.log(`Attempting to insert ${leadsToInsert.length} leads in batches of ${batchSize}`)
+
     for (let i = 0; i < leadsToInsert.length; i += batchSize) {
       const batch = leadsToInsert.slice(i, i + batchSize)
+
+      console.log(`Inserting batch ${i / batchSize + 1}, size: ${batch.length}`)
 
       const { data, error } = await adminClient
         .from('leads')
@@ -85,11 +89,15 @@ export async function importLeads(
 
       if (error) {
         console.error('Batch insert error:', error)
-        errors.push(`Batch ${i / batchSize + 1}: ${error.message}`)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        errors.push(`Batch ${i / batchSize + 1}: ${error.message} (${error.code || 'no code'})`)
       } else {
+        console.log(`Batch ${i / batchSize + 1} succeeded, inserted ${data?.length || 0} leads`)
         totalInserted += data?.length || 0
       }
     }
+
+    console.log(`Total inserted: ${totalInserted}, Total errors: ${errors.length}`)
 
     // Log import activity
     await adminClient.from('activities').insert({
@@ -109,13 +117,22 @@ export async function importLeads(
     revalidatePath('/dashboard/management/leads')
     revalidatePath('/dashboard/agent')
 
+    if (totalInserted === 0 && errors.length > 0) {
+      // Complete failure
+      return {
+        success: false,
+        error: `Import failed: ${errors.join('; ')}`
+      }
+    }
+
     if (errors.length > 0) {
+      // Partial success
       return {
         success: true,
         imported: totalInserted,
         total: leads.length,
         errors: errors,
-        message: `Imported ${totalInserted} of ${leads.length} leads with some errors`
+        message: `Imported ${totalInserted} of ${leads.length} leads. Errors: ${errors.join('; ')}`
       }
     }
 
