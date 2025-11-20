@@ -88,7 +88,8 @@ export default function EnhancedCallPanel({
         setTwilioDevice(device)
       } catch (err: any) {
         console.error('Failed to initialize Twilio:', err)
-        setError(err.message || 'Failed to initialize calling')
+        const errorMsg = err?.message || err?.toString() || 'Failed to initialize calling'
+        setError(errorMsg)
         setDeviceReady(false)
       }
     }

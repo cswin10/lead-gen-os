@@ -61,7 +61,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
     const today = new Date().toISOString().split('T')[0]
 
     // Fetch all leads assigned to agent
-    const { data: allLeads } = await supabase
+    const { data: allLeads, error } = await supabase
       .from('leads')
       .select(`
         *,
@@ -72,6 +72,12 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
       .not('status', 'in', '(converted,lost,not_interested)')
       .order('priority', { ascending: false })
       .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching leads:', error)
+      setLoading(false)
+      return
+    }
 
     if (!allLeads) {
       setLoading(false)

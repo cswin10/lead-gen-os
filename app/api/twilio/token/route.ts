@@ -32,6 +32,15 @@ export async function GET(request: Request) {
     const apiSecret = process.env.TWILIO_API_SECRET || process.env.TWILIO_AUTH_TOKEN
     const twimlAppSid = process.env.TWILIO_TWIML_APP_SID
 
+    // Debug logging (remove in production)
+    console.log('Twilio Token Generation:', {
+      accountSid: accountSid ? `${accountSid.substring(0, 10)}...` : 'missing',
+      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'missing',
+      apiSecret: apiSecret ? 'set' : 'missing',
+      twimlAppSid: twimlAppSid ? `${twimlAppSid.substring(0, 10)}...` : 'missing',
+      identity: profile.id
+    })
+
     if (!accountSid || !apiKey || !apiSecret) {
       return NextResponse.json(
         { error: 'Twilio credentials not configured' },
@@ -61,10 +70,10 @@ export async function GET(request: Request) {
       token: token.toJwt(),
       identity: profile.id,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating Twilio token:', error)
     return NextResponse.json(
-      { error: 'Failed to generate token' },
+      { error: 'Failed to generate token', details: error.message },
       { status: 500 }
     )
   }
