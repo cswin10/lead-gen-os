@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     const apiSecret = process.env.TWILIO_API_SECRET || process.env.TWILIO_AUTH_TOKEN
     const twimlAppSid = process.env.TWILIO_TWIML_APP_SID
 
-    if (!accountSid || !apiSecret) {
+    if (!accountSid || !apiKey || !apiSecret) {
       return NextResponse.json(
         { error: 'Twilio credentials not configured' },
         { status: 500 }
