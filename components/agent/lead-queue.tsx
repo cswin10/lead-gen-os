@@ -69,7 +69,9 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
         clients(company_name)
       `)
       .eq('assigned_agent_id', agentId)
-      .not('status', 'in', '(converted,lost,not_interested)')
+      .neq('status', 'converted')
+      .neq('status', 'lost')
+      .neq('status', 'not_interested')
       .order('priority', { ascending: false })
       .order('created_at', { ascending: true })
 
