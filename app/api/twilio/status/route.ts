@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     // Use service role client to bypass RLS
-    const supabase = createServiceRoleClient()
+    const supabase = await createServiceRoleClient()
 
     // Update the call status in the database
     const updateData: any = {
