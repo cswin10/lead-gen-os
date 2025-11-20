@@ -7,6 +7,7 @@ import { LayoutDashboard, Users, Phone, Settings, LogOut, BarChart3, FileText, Z
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { Footer } from '@/components/layouts/footer'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -102,11 +103,14 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 p-8">
-        <div className="mx-auto max-w-7xl animate-fadeIn">
-          {children}
-        </div>
-      </main>
+      <div className="ml-64 flex flex-col min-h-screen">
+        <main className="flex-1 p-8">
+          <div className="mx-auto max-w-7xl animate-fadeIn">
+            {children}
+          </div>
+        </main>
+        <Footer />
+      </div>
     </div>
   )
 }

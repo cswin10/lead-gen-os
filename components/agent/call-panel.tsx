@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Phone, PhoneOff, Mic, MicOff, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { Phone, PhoneOff, Mic, MicOff, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import { updateLeadStatus, logCall } from '@/app/actions/leads'
 import { useRouter } from 'next/navigation'
+import { Device, Call } from '@twilio/voice-sdk'
 
 interface CallPanelProps {
   agentId: string
@@ -27,28 +28,148 @@ function CallPanel({ agentId, organizationId, selectedLead }: CallPanelProps) {
   const [isMuted, setIsMuted] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
   const [notes, setNotes] = useState('')
+  const [twilioDevice, setTwilioDevice] = useState<Device | null>(null)
+  const [currentCall, setCurrentCall] = useState<Call | null>(null)
+  const [deviceReady, setDeviceReady] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Cleanup timer on unmount
+  // Initialize Twilio Device
   useEffect(() => {
+    let device: Device | null = null
+
+    const initTwilio = async () => {
+      try {
+        // Get Twilio token from API
+        const response = await fetch('/api/twilio/token')
+        if (!response.ok) {
+          throw new Error('Failed to get Twilio token')
+        }
+
+        const { token } = await response.json()
+
+        // Create and setup Twilio Device
+        device = new Device(token, {
+          logLevel: 1,
+          codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
+        })
+
+        // Device event listeners
+        device.on('registered', () => {
+          console.log('Twilio Device Ready')
+          setDeviceReady(true)
+          setError(null)
+        })
+
+        device.on('error', (error) => {
+          console.error('Twilio Device Error:', error)
+          setError(error.message || 'Device error occurred')
+          setDeviceReady(false)
+        })
+
+        device.on('incoming', (call) => {
+          console.log('Incoming call:', call)
+          // Handle incoming calls if needed
+        })
+
+        // Register the device
+        await device.register()
+        setTwilioDevice(device)
+      } catch (err: any) {
+        console.error('Failed to initialize Twilio:', err)
+        setError(err.message || 'Failed to initialize calling')
+        setDeviceReady(false)
+      }
+    }
+
+    initTwilio()
+
+    // Cleanup on unmount
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current)
       }
+      if (device) {
+        device.destroy()
+      }
     }
   }, [])
 
-  // In a real implementation, this would integrate with Twilio
-  const handleStartCall = () => {
-    setIsInCall(true)
-    // Start call timer
-    timerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1)
-    }, 1000)
+  const handleStartCall = async () => {
+    if (!selectedLead || !twilioDevice) return
+
+    try {
+      setError(null)
+
+      // Make the call through API to track it
+      const callResponse = await fetch('/api/twilio/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: selectedLead.phone,
+          leadId: selectedLead.id,
+        }),
+      })
+
+      if (!callResponse.ok) {
+        throw new Error('Failed to initiate call')
+      }
+
+      const { callSid } = await callResponse.json()
+
+      // Connect using Twilio Device
+      const call = await twilioDevice.connect({
+        params: {
+          To: selectedLead.phone,
+          CallSid: callSid,
+        },
+      })
+
+      setCurrentCall(call)
+      setIsInCall(true)
+
+      // Start call timer
+      timerRef.current = setInterval(() => {
+        setCallDuration(prev => prev + 1)
+      }, 1000)
+
+      // Call event listeners
+      call.on('accept', () => {
+        console.log('Call accepted')
+      })
+
+      call.on('disconnect', () => {
+        console.log('Call disconnected')
+        handleCallDisconnected()
+      })
+
+      call.on('cancel', () => {
+        console.log('Call cancelled')
+        handleCallDisconnected()
+      })
+    } catch (err: any) {
+      console.error('Failed to start call:', err)
+      setError(err.message || 'Failed to start call')
+      setIsInCall(false)
+    }
+  }
+
+  const handleCallDisconnected = () => {
+    setIsInCall(false)
+    setCurrentCall(null)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
   }
 
   const handleEndCall = async () => {
     if (!selectedLead) return
+
+    // Disconnect Twilio call
+    if (currentCall) {
+      currentCall.disconnect()
+    }
 
     setIsInCall(false)
     if (timerRef.current) {
@@ -69,7 +190,20 @@ function CallPanel({ agentId, organizationId, selectedLead }: CallPanelProps) {
     setCallDuration(0)
     setIsMuted(false)
     setNotes('')
+    setCurrentCall(null)
     router.refresh()
+  }
+
+  const handleToggleMute = () => {
+    if (currentCall) {
+      if (isMuted) {
+        currentCall.mute(false)
+        setIsMuted(false)
+      } else {
+        currentCall.mute(true)
+        setIsMuted(true)
+      }
+    }
   }
 
   const formatCallDuration = (seconds: number) => {
@@ -138,6 +272,24 @@ function CallPanel({ agentId, organizationId, selectedLead }: CallPanelProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Error Message */}
+        {error && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-destructive">Call Error</p>
+              <p className="text-xs text-destructive/80">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Connection Status */}
+        {!deviceReady && !error && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">Connecting to phone system...</p>
+          </div>
+        )}
+
         {/* Selected Lead Info */}
         {selectedLead && !isInCall && (
           <div className="p-3 bg-muted rounded-lg">
@@ -179,7 +331,7 @@ function CallPanel({ agentId, organizationId, selectedLead }: CallPanelProps) {
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
-                onClick={() => setIsMuted(!isMuted)}
+                onClick={handleToggleMute}
               >
                 {isMuted ? <MicOff className="h-4 w-4 mr-2" /> : <Mic className="h-4 w-4 mr-2" />}
                 {isMuted ? 'Unmute' : 'Mute'}
@@ -247,10 +399,10 @@ function CallPanel({ agentId, organizationId, selectedLead }: CallPanelProps) {
             className="w-full"
             size="lg"
             onClick={handleStartCall}
-            disabled={!selectedLead}
+            disabled={!selectedLead || !deviceReady}
           >
             <Phone className="h-5 w-5 mr-2" />
-            Start Call
+            {deviceReady ? 'Start Call' : 'Connecting...'}
           </Button>
         )}
 
