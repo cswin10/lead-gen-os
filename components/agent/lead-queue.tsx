@@ -60,7 +60,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
     const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
 
-    // Fetch all leads assigned to agent
+    // Fetch all leads assigned to agent (showing ALL statuses for now)
     const { data: allLeads, error } = await supabase
       .from('leads')
       .select(`
@@ -69,9 +69,6 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
         clients(company_name)
       `)
       .eq('assigned_agent_id', agentId)
-      .neq('status', 'converted')
-      .neq('status', 'lost')
-      .neq('status', 'not_interested')
       .order('priority', { ascending: false })
       .order('created_at', { ascending: true })
 
