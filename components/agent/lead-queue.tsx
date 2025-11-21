@@ -276,7 +276,7 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="!grid w-full grid-cols-4">
             <TabsTrigger value="newToday" className="relative">
               New Leads
               {leads.newToday.length > 0 && (

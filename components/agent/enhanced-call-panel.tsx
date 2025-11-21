@@ -54,10 +54,19 @@ export default function EnhancedCallPanel({
         // Get Twilio token from API
         const response = await fetch('/api/twilio/token')
         if (!response.ok) {
-          throw new Error('Failed to get Twilio token')
+          const errorData = await response.json()
+          console.error('Token fetch failed:', errorData)
+          throw new Error(errorData.error || 'Failed to get Twilio token')
         }
 
-        const { token } = await response.json()
+        const data = await response.json()
+        console.log('Token response:', { hasToken: !!data.token, identity: data.identity })
+
+        if (!data.token) {
+          throw new Error('No token returned from server')
+        }
+
+        const { token } = data
 
         // Create and setup Twilio Device
         device = new Device(token, {
