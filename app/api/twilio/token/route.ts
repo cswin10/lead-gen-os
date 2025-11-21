@@ -42,8 +42,17 @@ export async function GET(request: Request) {
     })
 
     if (!accountSid || !apiKey || !apiSecret) {
+      console.error('Missing Twilio credentials:', { accountSid: !!accountSid, apiKey: !!apiKey, apiSecret: !!apiSecret })
       return NextResponse.json(
         { error: 'Twilio credentials not configured' },
+        { status: 500 }
+      )
+    }
+
+    if (!twimlAppSid) {
+      console.error('TWILIO_TWIML_APP_SID not configured')
+      return NextResponse.json(
+        { error: 'Twilio TwiML App not configured' },
         { status: 500 }
       )
     }
@@ -66,8 +75,16 @@ export async function GET(request: Request) {
     token.addGrant(voiceGrant)
 
     // Serialize the token to a JWT string
+    const jwt = token.toJwt()
+
+    console.log('Token generated successfully:', {
+      identity: profile.id,
+      tokenLength: jwt.length,
+      tokenPrefix: jwt.substring(0, 20) + '...'
+    })
+
     return NextResponse.json({
-      token: token.toJwt(),
+      token: jwt,
       identity: profile.id,
     })
   } catch (error: any) {
