@@ -28,6 +28,7 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
     if (user.role === 'owner' || user.role === 'manager') {
       return [
         { href: '/dashboard/management', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/dashboard/management/reports', label: 'Reports', icon: FileText },
         { href: '/dashboard/settings', label: 'Settings', icon: Settings },
       ]
     } else if (user.role === 'agent') {
