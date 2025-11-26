@@ -60,19 +60,25 @@ export default function EnhancedCallPanel({
         }
 
         const data = await response.json()
-        console.log('Token response:', { hasToken: !!data.token, identity: data.identity })
+        console.log('Token response:', { hasToken: !!data.token, identity: data.identity, edge: data.edge })
 
         if (!data.token) {
           throw new Error('No token returned from server')
         }
 
-        const { token } = data
+        const { token, edge } = data
 
         // Create and setup Twilio Device
-        device = new Device(token, {
+        // If edge is specified (for regional accounts like Ireland), configure it
+        const deviceOptions: any = {
           logLevel: 1,
           codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
-        })
+        }
+        if (edge) {
+          deviceOptions.edge = edge
+          console.log('Using Twilio edge location:', edge)
+        }
+        device = new Device(token, deviceOptions)
 
         // Device event listeners
         device.on('registered', () => {

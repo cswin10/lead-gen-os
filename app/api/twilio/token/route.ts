@@ -27,47 +27,69 @@ export async function GET(request: Request) {
     }
 
     // Twilio credentials from environment
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const apiKey = process.env.TWILIO_API_KEY || accountSid
-    const apiSecret = process.env.TWILIO_API_SECRET || process.env.TWILIO_AUTH_TOKEN
-    const twimlAppSid = process.env.TWILIO_TWIML_APP_SID
+    const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim()
+    const apiKey = process.env.TWILIO_API_KEY?.trim()
+    const apiSecret = process.env.TWILIO_API_SECRET?.trim()
+    const twimlAppSid = process.env.TWILIO_TWIML_APP_SID?.trim()
 
-    // Debug logging (remove in production)
-    console.log('Twilio Token Generation:', {
-      accountSid: accountSid ? `${accountSid.substring(0, 10)}...` : 'missing',
-      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'missing',
-      apiSecret: apiSecret ? 'set' : 'missing',
-      twimlAppSid: twimlAppSid ? `${twimlAppSid.substring(0, 10)}...` : 'missing',
-      identity: profile.id
-    })
+    // Validate credential formats
+    const validationErrors: string[] = []
 
-    if (!accountSid || !apiKey || !apiSecret) {
-      console.error('Missing Twilio credentials:', { accountSid: !!accountSid, apiKey: !!apiKey, apiSecret: !!apiSecret })
-      return NextResponse.json(
-        { error: 'Twilio credentials not configured' },
-        { status: 500 }
-      )
+    if (!accountSid) {
+      validationErrors.push('TWILIO_ACCOUNT_SID is missing')
+    } else if (!accountSid.startsWith('AC')) {
+      validationErrors.push(`TWILIO_ACCOUNT_SID should start with 'AC', got '${accountSid.substring(0, 2)}...'`)
+    }
+
+    if (!apiKey) {
+      validationErrors.push('TWILIO_API_KEY is missing')
+    } else if (!apiKey.startsWith('SK')) {
+      validationErrors.push(`TWILIO_API_KEY should start with 'SK', got '${apiKey.substring(0, 2)}...' - Make sure you're using an API Key, not Account SID`)
+    }
+
+    if (!apiSecret) {
+      validationErrors.push('TWILIO_API_SECRET is missing')
     }
 
     if (!twimlAppSid) {
-      console.error('TWILIO_TWIML_APP_SID not configured')
+      validationErrors.push('TWILIO_TWIML_APP_SID is missing')
+    } else if (!twimlAppSid.startsWith('AP')) {
+      validationErrors.push(`TWILIO_TWIML_APP_SID should start with 'AP', got '${twimlAppSid.substring(0, 2)}...'`)
+    }
+
+    // Twilio region (for accounts outside US, e.g., 'ie1' for Ireland, 'au1' for Australia)
+    const twilioRegion = process.env.TWILIO_REGION?.trim()
+
+    // Debug logging
+    console.log('Twilio Token Generation:', {
+      accountSid: accountSid ? `${accountSid.substring(0, 6)}...` : 'missing',
+      apiKey: apiKey ? `${apiKey.substring(0, 6)}...` : 'missing',
+      apiSecret: apiSecret ? `set (${apiSecret.length} chars)` : 'missing',
+      twimlAppSid: twimlAppSid ? `${twimlAppSid.substring(0, 6)}...` : 'missing',
+      twilioRegion: twilioRegion || 'default (US)',
+      identity: profile.id,
+      validationErrors
+    })
+
+    if (validationErrors.length > 0) {
+      console.error('Twilio credential validation failed:', validationErrors)
       return NextResponse.json(
-        { error: 'Twilio TwiML App not configured' },
+        { error: 'Twilio configuration error', details: validationErrors },
         { status: 500 }
       )
     }
 
-    // Create an access token
+    // Create an access token (we've already validated these are not undefined)
     const token = new AccessToken(
-      accountSid,
-      apiKey,
-      apiSecret,
+      accountSid!,
+      apiKey!,
+      apiSecret!,
       { identity: profile.id }
     )
 
     // Create a Voice grant
     const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: twimlAppSid,
+      outgoingApplicationSid: twimlAppSid!,
       incomingAllow: true,
     })
 
@@ -83,9 +105,21 @@ export async function GET(request: Request) {
       tokenPrefix: jwt.substring(0, 20) + '...'
     })
 
+    // Map region codes to edge locations for Voice SDK
+    const edgeMap: Record<string, string> = {
+      'ie1': 'dublin',
+      'au1': 'sydney',
+      'jp1': 'tokyo',
+      'sg1': 'singapore',
+      'br1': 'sao-paulo',
+      'de1': 'frankfurt',
+    }
+    const edge = twilioRegion ? edgeMap[twilioRegion] || twilioRegion : undefined
+
     return NextResponse.json({
       token: jwt,
       identity: profile.id,
+      edge, // Pass to frontend for Device configuration
     })
   } catch (error: any) {
     console.error('Error generating Twilio token:', error)
