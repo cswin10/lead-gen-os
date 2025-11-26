@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Phone, Mail, Building2, Briefcase, Clock, Flame, Snowflake, Wind, ChevronRight } from 'lucide-react'
+import { Phone, Mail, Building2, Briefcase, Clock, Flame, Snowflake, Wind, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export interface Lead {
@@ -37,6 +36,10 @@ interface LeadQueueProps {
   selectedLead: Lead | null
 }
 
+type TabKey = 'newToday' | 'callbacks' | 'followUps' | 'unresponsive'
+
+const LEADS_PER_PAGE = 10
+
 export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQueueProps) {
   const [leads, setLeads] = useState<{
     newToday: Lead[]
@@ -50,7 +53,13 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
     unresponsive: []
   })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('newToday')
+  const [activeTab, setActiveTab] = useState<TabKey>('newToday')
+  const [visibleCounts, setVisibleCounts] = useState<Record<TabKey, number>>({
+    newToday: LEADS_PER_PAGE,
+    callbacks: LEADS_PER_PAGE,
+    followUps: LEADS_PER_PAGE,
+    unresponsive: LEADS_PER_PAGE
+  })
 
   useEffect(() => {
     fetchLeads()
@@ -138,12 +147,26 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
   }
 
   function handleNextLead() {
-    const allCurrentLeads = leads[activeTab as keyof typeof leads]
+    const allCurrentLeads = leads[activeTab]
     if (!allCurrentLeads.length) return
 
     const currentIndex = allCurrentLeads.findIndex(l => l.id === selectedLead?.id)
     const nextIndex = (currentIndex + 1) % allCurrentLeads.length
     onLeadSelect(allCurrentLeads[nextIndex])
+  }
+
+  function handleShowMore(tab: TabKey) {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [tab]: prev[tab] + LEADS_PER_PAGE
+    }))
+  }
+
+  function handleShowLess(tab: TabKey) {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [tab]: LEADS_PER_PAGE
+    }))
   }
 
   function renderLeadCard(lead: Lead) {
@@ -154,61 +177,64 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
       <div
         key={lead.id}
         onClick={() => onLeadSelect(lead)}
-        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+        className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
           selectedLead?.id === lead.id
             ? 'border-primary bg-primary/5 shadow-md'
             : 'hover:bg-accent'
         }`}
       >
         <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="font-semibold">
+              <h4 className="font-semibold truncate">
                 {lead.first_name} {lead.last_name}
               </h4>
-              <HeatIcon className={`h-4 w-4 ${heat.color}`} />
+              <HeatIcon className={`h-4 w-4 flex-shrink-0 ${heat.color}`} />
             </div>
-            <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
               {lead.company && (
-                <span className="flex items-center gap-1">
-                  <Building2 className="h-3 w-3" />
-                  {lead.company}
+                <span className="flex items-center gap-1 truncate max-w-[120px]">
+                  <Building2 className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{lead.company}</span>
                 </span>
               )}
               {lead.job_title && (
-                <span className="flex items-center gap-1">
-                  <Briefcase className="h-3 w-3" />
-                  {lead.job_title}
+                <span className="flex items-center gap-1 truncate max-w-[120px] hidden sm:flex">
+                  <Briefcase className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{lead.job_title}</span>
                 </span>
               )}
             </div>
           </div>
-          <Badge variant={
-            lead.status === 'new' ? 'default' :
-            lead.status === 'qualified' ? 'success' :
-            lead.status === 'interested' ? 'warning' :
-            'secondary'
-          }>
+          <Badge
+            className="flex-shrink-0 ml-2 text-xs"
+            variant={
+              lead.status === 'new' ? 'default' :
+              lead.status === 'qualified' ? 'default' :
+              lead.status === 'interested' ? 'secondary' :
+              'secondary'
+            }
+          >
             {lead.status}
           </Badge>
         </div>
 
-        <div className="flex gap-4 text-sm">
+        <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-sm">
           <span className="flex items-center gap-1 text-muted-foreground">
-            <Phone className="h-3 w-3" />
-            {lead.phone}
+            <Phone className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{lead.phone}</span>
           </span>
           {lead.email && (
-            <span className="flex items-center gap-1 text-muted-foreground truncate">
-              <Mail className="h-3 w-3" />
-              {lead.email}
+            <span className="flex items-center gap-1 text-muted-foreground truncate hidden sm:flex">
+              <Mail className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{lead.email}</span>
             </span>
           )}
         </div>
 
         {lead.last_contacted_at && (
           <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+            <Clock className="h-3 w-3 flex-shrink-0" />
             Last: {formatDistanceToNow(new Date(lead.last_contacted_at), { addSuffix: true })}
           </div>
         )}
@@ -223,10 +249,58 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
 
         {lead.campaigns && (
           <div className="mt-2 text-xs">
-            <Badge variant="outline">{lead.campaigns.name}</Badge>
+            <Badge variant="outline" className="truncate max-w-full">{lead.campaigns.name}</Badge>
           </div>
         )}
       </div>
+    )
+  }
+
+  function renderLeadList(tabLeads: Lead[], tabKey: TabKey, emptyMessage: string) {
+    if (tabLeads.length === 0) {
+      return (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          {emptyMessage}
+        </p>
+      )
+    }
+
+    const visibleLeads = tabLeads.slice(0, visibleCounts[tabKey])
+    const hasMore = tabLeads.length > visibleCounts[tabKey]
+    const isExpanded = visibleCounts[tabKey] > LEADS_PER_PAGE
+
+    return (
+      <>
+        <div className="space-y-3">
+          {visibleLeads.map(renderLeadCard)}
+        </div>
+        {(hasMore || isExpanded) && (
+          <div className="flex justify-center gap-2 mt-4">
+            {hasMore && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleShowMore(tabKey)}
+                className="flex items-center gap-1"
+              >
+                <ChevronDown className="h-4 w-4" />
+                Show more ({tabLeads.length - visibleCounts[tabKey]} remaining)
+              </Button>
+            )}
+            {isExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleShowLess(tabKey)}
+                className="flex items-center gap-1"
+              >
+                <ChevronUp className="h-4 w-4" />
+                Show less
+              </Button>
+            )}
+          </div>
+        )}
+      </>
     )
   }
 
@@ -261,88 +335,62 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
     )
   }
 
+  const tabs: { key: TabKey; label: string; shortLabel: string; count: number; variant: 'default' | 'destructive' | 'secondary' | 'outline' }[] = [
+    { key: 'newToday', label: 'New Leads', shortLabel: 'New', count: leads.newToday.length, variant: 'default' },
+    { key: 'callbacks', label: 'Callbacks', shortLabel: 'Callback', count: leads.callbacks.length, variant: 'destructive' },
+    { key: 'followUps', label: 'Follow-Ups', shortLabel: 'Follow', count: leads.followUps.length, variant: 'secondary' },
+    { key: 'unresponsive', label: 'Unresponsive', shortLabel: 'Unresp.', count: leads.unresponsive.length, variant: 'outline' },
+  ]
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Lead Queue</CardTitle>
-            <CardDescription>{totalLeads} leads to contact</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Lead Queue</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">{totalLeads} leads to contact</CardDescription>
           </div>
-          <Button onClick={handleNextLead} variant="outline" size="sm">
-            Next Lead <ChevronRight className="h-4 w-4 ml-1" />
+          <Button onClick={handleNextLead} variant="outline" size="sm" className="hidden sm:flex">
+            Next <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+          <Button onClick={handleNextLead} variant="outline" size="icon" className="sm:hidden h-8 w-8">
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="!grid w-full grid-cols-4">
-            <TabsTrigger value="newToday" className="relative">
-              New Leads
-              {leads.newToday.length > 0 && (
-                <Badge className="ml-2" variant="default">{leads.newToday.length}</Badge>
+      <CardContent className="pt-0">
+        {/* Tab buttons - responsive grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all ${
+                activeTab === tab.key
+                  ? 'border-primary bg-primary/5'
+                  : 'border-transparent bg-muted/50 hover:bg-muted'
+              }`}
+            >
+              <span className="text-xs sm:text-sm font-medium truncate w-full text-center">
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
+              </span>
+              {tab.count > 0 && (
+                <Badge variant={tab.variant} className="mt-1 text-xs">
+                  {tab.count}
+                </Badge>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="callbacks" className="relative">
-              Callbacks
-              {leads.callbacks.length > 0 && (
-                <Badge className="ml-2" variant="destructive">{leads.callbacks.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="followUps" className="relative">
-              Follow-Ups
-              {leads.followUps.length > 0 && (
-                <Badge className="ml-2" variant="secondary">{leads.followUps.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="unresponsive" className="relative">
-              Unresponsive
-              {leads.unresponsive.length > 0 && (
-                <Badge className="ml-2" variant="outline">{leads.unresponsive.length}</Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="newToday" className="space-y-3 mt-4">
-            {leads.newToday.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No new leads
-              </p>
-            ) : (
-              leads.newToday.map(renderLeadCard)
-            )}
-          </TabsContent>
-
-          <TabsContent value="callbacks" className="space-y-3 mt-4">
-            {leads.callbacks.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No callbacks scheduled
-              </p>
-            ) : (
-              leads.callbacks.map(renderLeadCard)
-            )}
-          </TabsContent>
-
-          <TabsContent value="followUps" className="space-y-3 mt-4">
-            {leads.followUps.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No follow-ups needed
-              </p>
-            ) : (
-              leads.followUps.map(renderLeadCard)
-            )}
-          </TabsContent>
-
-          <TabsContent value="unresponsive" className="space-y-3 mt-4">
-            {leads.unresponsive.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No unresponsive leads
-              </p>
-            ) : (
-              leads.unresponsive.map(renderLeadCard)
-            )}
-          </TabsContent>
-        </Tabs>
+        {/* Tab content */}
+        <div className="mt-4">
+          {activeTab === 'newToday' && renderLeadList(leads.newToday, 'newToday', 'No new leads')}
+          {activeTab === 'callbacks' && renderLeadList(leads.callbacks, 'callbacks', 'No callbacks scheduled')}
+          {activeTab === 'followUps' && renderLeadList(leads.followUps, 'followUps', 'No follow-ups needed')}
+          {activeTab === 'unresponsive' && renderLeadList(leads.unresponsive, 'unresponsive', 'No unresponsive leads')}
+        </div>
       </CardContent>
     </Card>
   )
