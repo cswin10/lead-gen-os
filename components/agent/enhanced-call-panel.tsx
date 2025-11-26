@@ -125,7 +125,7 @@ export default function EnhancedCallPanel({
       setCallbackDate('')
       setShowCallbackPicker(false)
 
-      // Make the call through API to track it
+      // Create a pending call record in the database
       const callResponse = await fetch('/api/twilio/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,16 +136,19 @@ export default function EnhancedCallPanel({
       })
 
       if (!callResponse.ok) {
-        throw new Error('Failed to initiate call')
+        const errorData = await callResponse.json()
+        throw new Error(errorData.error || 'Failed to prepare call')
       }
 
-      const { callSid } = await callResponse.json()
+      const { callId } = await callResponse.json()
 
-      // Connect using Twilio Device
+      // Connect using Twilio Device - this initiates the actual call
+      // The device uses the TwiML App which calls /api/twilio/voice
       const call = await twilioDevice.connect({
         params: {
           To: selectedLead.phone,
-          CallSid: callSid,
+          LeadId: selectedLead.id,
+          CallRecordId: callId || '',
         },
       })
 
@@ -158,8 +161,21 @@ export default function EnhancedCallPanel({
       }, 1000)
 
       // Call event listeners
-      call.on('accept', () => {
+      call.on('accept', async () => {
         console.log('Call accepted')
+        // Update the call record with the Twilio CallSid
+        const twilioCallSid = call.parameters?.CallSid
+        if (callId && twilioCallSid) {
+          try {
+            await fetch('/api/twilio/call', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ callId, twilioCallSid }),
+            })
+          } catch (err) {
+            console.error('Failed to update call record with SID:', err)
+          }
+        }
       })
 
       call.on('disconnect', () => {
@@ -169,6 +185,12 @@ export default function EnhancedCallPanel({
 
       call.on('cancel', () => {
         console.log('Call cancelled')
+        handleCallDisconnected()
+      })
+
+      call.on('error', (error: any) => {
+        console.error('Call error:', error)
+        setError(error.message || 'Call error occurred')
         handleCallDisconnected()
       })
     } catch (err: any) {

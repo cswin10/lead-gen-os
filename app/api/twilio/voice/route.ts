@@ -7,22 +7,39 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData()
     const to = formData.get('To') as string
+    const callRecordId = formData.get('CallRecordId') as string
+
+    console.log('Voice webhook received:', {
+      to,
+      callRecordId,
+      allParams: Object.fromEntries(formData.entries())
+    })
 
     // Create TwiML response
     const response = new VoiceResponse()
 
     if (to) {
-      // Dial the number
+      // Get the app URL for status callbacks
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+      // Dial the number with status callback
       const dial = response.dial({
         callerId: process.env.TWILIO_PHONE_NUMBER,
         timeout: 30,
-        record: 'record-from-answer-dual', // Optional: record calls
+        action: `${appUrl}/api/twilio/status`,
+        method: 'POST',
       })
-      dial.number(to)
+      dial.number({
+        statusCallback: `${appUrl}/api/twilio/status`,
+        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+        statusCallbackMethod: 'POST',
+      }, to)
     } else {
       // No number provided
-      response.say('No number provided. Please try again.')
+      response.say('No phone number provided. Please try again.')
     }
+
+    console.log('TwiML response:', response.toString())
 
     // Return TwiML XML
     return new NextResponse(response.toString(), {
@@ -35,7 +52,7 @@ export async function POST(request: Request) {
 
     // Return error TwiML
     const response = new VoiceResponse()
-    response.say('An error occurred. Please try again.')
+    response.say('An error occurred while connecting your call. Please try again.')
 
     return new NextResponse(response.toString(), {
       status: 500,
