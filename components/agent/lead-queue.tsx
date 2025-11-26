@@ -335,11 +335,11 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
     )
   }
 
-  const tabs: { key: TabKey; label: string; shortLabel: string; count: number; variant: 'default' | 'destructive' | 'secondary' | 'outline' }[] = [
-    { key: 'newToday', label: 'New Leads', shortLabel: 'New', count: leads.newToday.length, variant: 'default' },
-    { key: 'callbacks', label: 'Callbacks', shortLabel: 'Callback', count: leads.callbacks.length, variant: 'destructive' },
-    { key: 'followUps', label: 'Follow-Ups', shortLabel: 'Follow', count: leads.followUps.length, variant: 'secondary' },
-    { key: 'unresponsive', label: 'Unresponsive', shortLabel: 'Unresp.', count: leads.unresponsive.length, variant: 'outline' },
+  const tabs: { key: TabKey; label: string; shortLabel: string; count: number; color: string }[] = [
+    { key: 'newToday', label: 'New Leads', shortLabel: 'New', count: leads.newToday.length, color: 'bg-blue-500' },
+    { key: 'callbacks', label: 'Callbacks', shortLabel: 'Callbacks', count: leads.callbacks.length, color: 'bg-red-500' },
+    { key: 'followUps', label: 'Follow-Ups', shortLabel: 'Follow-Up', count: leads.followUps.length, color: 'bg-amber-500' },
+    { key: 'unresponsive', label: 'Unresponsive', shortLabel: 'No Reply', count: leads.unresponsive.length, color: 'bg-gray-400' },
   ]
 
   return (
@@ -359,26 +359,26 @@ export default function LeadQueue({ agentId, onLeadSelect, selectedLead }: LeadQ
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        {/* Tab buttons - responsive grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        {/* Tab buttons - horizontal scroll on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all flex-shrink-0 ${
                 activeTab === tab.key
-                  ? 'border-primary bg-primary/5'
-                  : 'border-transparent bg-muted/50 hover:bg-muted'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <span className="text-xs sm:text-sm font-medium truncate w-full text-center">
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.shortLabel}</span>
-              </span>
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.shortLabel}</span>
               {tab.count > 0 && (
-                <Badge variant={tab.variant} className="mt-1 text-xs">
+                <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
+                  activeTab === tab.key ? 'bg-white/20 text-white' : `${tab.color} text-white`
+                }`}>
                   {tab.count}
-                </Badge>
+                </span>
               )}
             </button>
           ))}
