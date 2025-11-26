@@ -57,12 +57,16 @@ export async function GET(request: Request) {
       validationErrors.push(`TWILIO_TWIML_APP_SID should start with 'AP', got '${twimlAppSid.substring(0, 2)}...'`)
     }
 
+    // Twilio region (for accounts outside US, e.g., 'ie1' for Ireland, 'au1' for Australia)
+    const twilioRegion = process.env.TWILIO_REGION?.trim()
+
     // Debug logging
     console.log('Twilio Token Generation:', {
       accountSid: accountSid ? `${accountSid.substring(0, 6)}...` : 'missing',
       apiKey: apiKey ? `${apiKey.substring(0, 6)}...` : 'missing',
       apiSecret: apiSecret ? `set (${apiSecret.length} chars)` : 'missing',
       twimlAppSid: twimlAppSid ? `${twimlAppSid.substring(0, 6)}...` : 'missing',
+      twilioRegion: twilioRegion || 'default (US)',
       identity: profile.id,
       validationErrors
     })
@@ -75,17 +79,17 @@ export async function GET(request: Request) {
       )
     }
 
-    // Create an access token
+    // Create an access token (we've already validated these are not undefined)
     const token = new AccessToken(
-      accountSid,
-      apiKey,
-      apiSecret,
+      accountSid!,
+      apiKey!,
+      apiSecret!,
       { identity: profile.id }
     )
 
     // Create a Voice grant
     const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: twimlAppSid,
+      outgoingApplicationSid: twimlAppSid!,
       incomingAllow: true,
     })
 
@@ -101,9 +105,21 @@ export async function GET(request: Request) {
       tokenPrefix: jwt.substring(0, 20) + '...'
     })
 
+    // Map region codes to edge locations for Voice SDK
+    const edgeMap: Record<string, string> = {
+      'ie1': 'dublin',
+      'au1': 'sydney',
+      'jp1': 'tokyo',
+      'sg1': 'singapore',
+      'br1': 'sao-paulo',
+      'de1': 'frankfurt',
+    }
+    const edge = twilioRegion ? edgeMap[twilioRegion] || twilioRegion : undefined
+
     return NextResponse.json({
       token: jwt,
       identity: profile.id,
+      edge, // Pass to frontend for Device configuration
     })
   } catch (error: any) {
     console.error('Error generating Twilio token:', error)
