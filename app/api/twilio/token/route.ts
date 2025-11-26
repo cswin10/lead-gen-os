@@ -28,9 +28,14 @@ export async function GET(request: Request) {
 
     // Twilio credentials from environment
     const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim()
-    const apiKey = process.env.TWILIO_API_KEY?.trim()
-    const apiSecret = process.env.TWILIO_API_SECRET?.trim()
+    const authToken = process.env.TWILIO_AUTH_TOKEN?.trim()
+    // Try API Key first, fall back to Account SID + Auth Token for regional accounts
+    const apiKey = process.env.TWILIO_API_KEY?.trim() || accountSid
+    const apiSecret = process.env.TWILIO_API_SECRET?.trim() || authToken
     const twimlAppSid = process.env.TWILIO_TWIML_APP_SID?.trim()
+
+    // Check if using API Key or Auth Token method
+    const usingApiKey = process.env.TWILIO_API_KEY?.trim()?.startsWith('SK')
 
     // Validate credential formats
     const validationErrors: string[] = []
@@ -42,13 +47,13 @@ export async function GET(request: Request) {
     }
 
     if (!apiKey) {
-      validationErrors.push('TWILIO_API_KEY is missing')
-    } else if (!apiKey.startsWith('SK')) {
-      validationErrors.push(`TWILIO_API_KEY should start with 'SK', got '${apiKey.substring(0, 2)}...' - Make sure you're using an API Key, not Account SID`)
+      validationErrors.push('TWILIO_API_KEY (or TWILIO_ACCOUNT_SID as fallback) is missing')
+    } else if (usingApiKey && !apiKey.startsWith('SK')) {
+      validationErrors.push(`TWILIO_API_KEY should start with 'SK', got '${apiKey.substring(0, 2)}...'`)
     }
 
     if (!apiSecret) {
-      validationErrors.push('TWILIO_API_SECRET is missing')
+      validationErrors.push('TWILIO_API_SECRET (or TWILIO_AUTH_TOKEN as fallback) is missing')
     }
 
     if (!twimlAppSid) {
@@ -67,6 +72,7 @@ export async function GET(request: Request) {
       apiSecret: apiSecret ? `set (${apiSecret.length} chars)` : 'missing',
       twimlAppSid: twimlAppSid ? `${twimlAppSid.substring(0, 6)}...` : 'missing',
       twilioRegion: twilioRegion || 'default (US)',
+      authMethod: usingApiKey ? 'API Key + Secret' : 'Account SID + Auth Token (fallback)',
       identity: profile.id,
       validationErrors
     })
